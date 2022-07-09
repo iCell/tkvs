@@ -22,9 +22,6 @@ func main() {
 	for {
 		util.Info("> ")
 		scanner.Scan()
-		input := scanner.Text()
-		if err := session.Process(input); err != nil {
-			util.Error(err.Error())
-		}
+		session.Process(scanner.Text())
 	}
 }

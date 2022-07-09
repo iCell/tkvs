@@ -10,45 +10,45 @@ const maxTrxDepth = 100
 var ErrMaxDepthExceeded = errors.New("max transaction depth exceeded")
 
 type KvStore struct {
-	topTrx  *transaction
-	trxSize int
+	topTrx   *transaction
+	trxCount int
 }
 
 func NewKvStore() *KvStore {
 	return &KvStore{
-		topTrx:  newTransaction(),
-		trxSize: 1,
+		topTrx:   newTransaction(),
+		trxCount: 1,
 	}
 }
 
 func (_kv *KvStore) Begin() error {
-	if _kv.trxSize == maxTrxDepth {
+	if _kv.trxCount == maxTrxDepth {
 		return ErrMaxDepthExceeded
 	}
 	trx := newTransaction()
 	trx.Next = _kv.topTrx
-	_kv.topTrx, _kv.trxSize = trx, _kv.trxSize+1
+	_kv.topTrx, _kv.trxCount = trx, _kv.trxCount+1
 	return nil
 }
 
 func (_kv *KvStore) Rollback() error {
-	if _kv.trxSize == 1 {
+	if _kv.trxCount == 1 {
 		_kv.topTrx.Clear()
 		return nil
 	}
-	_kv.topTrx, _kv.trxSize = _kv.topTrx.Next, _kv.trxSize-1
+	_kv.topTrx, _kv.trxCount = _kv.topTrx.Next, _kv.trxCount-1
 	return nil
 }
 
 func (_kv *KvStore) Commit() error {
-	if _kv.trxSize == 1 {
+	if _kv.trxCount == 1 {
 		return nil
 	}
 	next := _kv.topTrx.Next
 	for k, v := range _kv.topTrx.Kvs {
 		next.Set(k, v)
 	}
-	_kv.topTrx, _kv.trxSize = next, _kv.trxSize-1
+	_kv.topTrx, _kv.trxCount = next, _kv.trxCount-1
 	return nil
 }
 

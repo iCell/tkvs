@@ -29,7 +29,7 @@ func TestKvStore(t *testing.T) {
 		kvStore := NewKvStore()
 		kvStore.Set("key1", "value1")
 		kvStore.Rollback()
-		assert(t, 1, kvStore.trxSize)
+		assert(t, 1, kvStore.trxCount)
 		assert(t, 0, len(kvStore.topTrx.Kvs))
 	})
 
