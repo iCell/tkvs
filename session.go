@@ -2,9 +2,7 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"os"
-	"strconv"
 	"strings"
 )
 
@@ -14,7 +12,7 @@ var (
 )
 
 type Session struct {
-	Kv *KvStore
+	Kv IStore
 }
 
 func NewSession() *Session {
@@ -51,7 +49,7 @@ func (_s *Session) Process(input string) error {
 		}
 		_s.delete(components[1:])
 	case "COUNT":
-		if len(components[1:]) < 1 {
+		if len(components[1:]) != 1 {
 			return ErrInvalidArguments
 		}
 		_s.count(components[1:])
@@ -78,10 +76,10 @@ func (_s *Session) set(args []string) {
 func (_s *Session) get(args []string) {
 	v, exist := _s.Kv.Get(args[0])
 	if !exist {
-		fmt.Println("key not set")
+		Error("key not set")
 		return
 	}
-	fmt.Println(v)
+	Output(v)
 }
 
 func (_s *Session) delete(args []string) {
@@ -91,27 +89,23 @@ func (_s *Session) delete(args []string) {
 }
 
 func (_s *Session) count(args []string) {
-	results := make([]string, 0, len(args))
-	for _, arg := range args {
-		results = append(results, strconv.Itoa(_s.Kv.Count(arg)))
-	}
-	fmt.Println(strings.Join(results, " "))
+	Output(_s.Kv.Count(args[0]))
 }
 
 func (_s *Session) begin() {
 	if err := _s.Kv.Begin(); err != nil {
-		fmt.Println(err)
+		Error(err.Error())
 	}
 }
 
 func (_s *Session) rollback() {
 	if err := _s.Kv.Rollback(); err != nil {
-		fmt.Println(err)
+		Error(err.Error())
 	}
 }
 
 func (_s *Session) commit() {
 	if err := _s.Kv.Commit(); err != nil {
-		fmt.Println(err)
+		Error(err.Error())
 	}
 }

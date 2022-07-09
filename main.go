@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"os/signal"
 )
@@ -18,11 +17,13 @@ func main() {
 
 	session := NewSession()
 	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println("the transactional key-value store started...")
-	for scanner.Scan() {
+	Info("the transactional key-value store started...\n")
+	for {
+		Info("> ")
+		scanner.Scan()
 		input := scanner.Text()
 		if err := session.Process(input); err != nil {
-			fmt.Println(err)
+			Error(err.Error())
 		}
 	}
 }

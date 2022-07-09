@@ -12,6 +12,16 @@ var (
 	ErrMaxDepthExceeded = errors.New("max transaction depth exceeded")
 )
 
+type IStore interface {
+	Begin() error
+	Rollback() error
+	Commit() error
+	Count(value string) int
+	Get(key string) (string, bool)
+	Set(key, value string)
+	Delete(key string)
+}
+
 type KvStore struct {
 	topTrx  *transaction
 	trxSize int
@@ -38,8 +48,7 @@ func (_kv *KvStore) Rollback() error {
 	if _kv.trxSize == 1 {
 		return ErrNoValidTrx
 	}
-	_kv.topTrx = _kv.topTrx.Next()
-	_kv.trxSize -= 1
+	_kv.topTrx, _kv.trxSize = _kv.topTrx.Next(), _kv.trxSize-1
 	return nil
 }
 
