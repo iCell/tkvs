@@ -3,97 +3,115 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 )
 
-const maxTrxDepth = 100
-
 var (
-	ErrNoValidTrx       = errors.New("there is no valid transaction existed")
-	ErrMaxDepthExceeded = errors.New("max transaction depth exceeded")
+	ErrInvalidArguments = errors.New("invalid arguments")
+	ErrUnSupportedCmd   = errors.New("unsupported command")
 )
 
 type Session struct {
-	topTrx  *transaction
-	trxSize int
+	Kv *KvStore
 }
 
 func NewSession() *Session {
-	return &Session{
-		topTrx:  newTransaction(),
-		trxSize: 1,
-	}
+	return &Session{Kv: NewKvStore()}
 }
 
-func (_s *Session) Begin() error {
-	if _s.trxSize == maxTrxDepth {
-		return ErrMaxDepthExceeded
-	}
-	trx := newTransaction()
-	trx.Push(_s.topTrx)
-	_s.topTrx, _s.trxSize = trx, _s.trxSize+1
-	return nil
-}
-
-func (_s *Session) Rollback() error {
-	if _s.trxSize == 1 {
-		return ErrNoValidTrx
-	}
-	_s.topTrx = _s.topTrx.Next()
-	_s.trxSize -= 1
-	return nil
-}
-
-func (_s *Session) Commit() error {
-	if _s.trxSize == 1 {
-		return ErrNoValidTrx
-	}
-	next := _s.topTrx.Next()
-	for k, v := range _s.topTrx.store {
-		next.Set(k, v)
-	}
-	_s.topTrx, _s.trxSize = next, _s.trxSize-1
-	return nil
-}
-
-// Count function is operated in-memory, the iteration is so fast,
-// based on the requirements, no need to add a reversed map to archive O(1) complexity.
-func (_s *Session) Count(value string) int {
-	result, current := 0, _s.topTrx
-	for current != nil {
-		for _, v := range current.store {
-			if value == v {
-				result += 1
-			}
+func (_s *Session) Process(input string) error {
+	splits := strings.Split(input, " ")
+	components := make([]string, 0, len(splits))
+	for _, split := range splits {
+		if len(split) == 0 {
+			continue
 		}
-		current = current.Next()
+		components = append(components, split)
 	}
-	return result
-}
+	if len(components) == 0 {
+		return nil
+	}
 
-func (_s *Session) Delete(key string) {
-	_s.topTrx.Delete(key)
-}
-
-func (_s *Session) Set(key, value string) {
-	_s.topTrx.Set(key, value)
-}
-
-func (_s *Session) Get(key string) (string, bool) {
-	next := _s.topTrx
-	for next != nil {
-		v, exist := _s.topTrx.Get(key)
-		if exist {
-			return v, true
+	switch strings.ToUpper(components[0]) {
+	case "SET":
+		if len(components[1:])%2 != 0 {
+			return ErrInvalidArguments
 		}
-		next = next.Next()
+		_s.set(components[1:])
+	case "GET":
+		if len(components[1:]) != 1 {
+			return ErrInvalidArguments
+		}
+		_s.get(components[1:])
+	case "DELETE":
+		if len(components[1:]) < 1 {
+			return ErrInvalidArguments
+		}
+		_s.delete(components[1:])
+	case "COUNT":
+		if len(components[1:]) < 1 {
+			return ErrInvalidArguments
+		}
+		_s.count(components[1:])
+	case "BEGIN":
+		_s.begin()
+	case "COMMIT":
+		_s.commit()
+	case "ROLLBACK":
+		_s.rollback()
+	case "EXIT":
+		os.Exit(0)
+	default:
+		return ErrUnSupportedCmd
 	}
-	return "", false
+	return nil
 }
 
-func (_s *Session) MustGet(key string) string {
-	v, exist := _s.Get(key)
+func (_s *Session) set(args []string) {
+	for i := 0; i < len(args); i += 2 {
+		_s.Kv.Set(args[i], args[i+1])
+	}
+}
+
+func (_s *Session) get(args []string) {
+	v, exist := _s.Kv.Get(args[0])
 	if !exist {
-		panic(fmt.Sprintf("the value of %s should be provided", key))
+		fmt.Println("key not set")
+		return
 	}
-	return v
+	fmt.Println(v)
+}
+
+func (_s *Session) delete(args []string) {
+	for _, arg := range args {
+		_s.Kv.Delete(arg)
+	}
+}
+
+func (_s *Session) count(args []string) {
+	results := make([]string, 0, len(args))
+	for _, arg := range args {
+		results = append(results, strconv.Itoa(_s.Kv.Count(arg)))
+	}
+	fmt.Println(strings.Join(results, " "))
+}
+
+func (_s *Session) begin() {
+	if err := _s.Kv.Begin(); err != nil {
+		fmt.Println(err)
+	}
+}
+
+func (_s *Session) rollback() {
+	if err := _s.Kv.Rollback(); err != nil {
+		fmt.Println(err)
+	}
+}
+
+func (_s *Session) commit() {
+	if err := _s.Kv.Commit(); err != nil {
+		fmt.Println(err)
+	}
 }
