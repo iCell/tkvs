@@ -17,7 +17,7 @@ func main() {
 
 	session := NewSession()
 	scanner := bufio.NewScanner(os.Stdin)
-	Info("the transactional key-value store started...\n")
+	Info("the transactional key-value Kvs started...\n")
 	for {
 		Info("> ")
 		scanner.Scan()

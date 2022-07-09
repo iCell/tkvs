@@ -39,7 +39,7 @@ func (_kv *KvStore) Begin() error {
 		return ErrMaxDepthExceeded
 	}
 	trx := newTransaction()
-	trx.Push(_kv.topTrx)
+	trx.Next = _kv.topTrx
 	_kv.topTrx, _kv.trxSize = trx, _kv.trxSize+1
 	return nil
 }
@@ -48,7 +48,7 @@ func (_kv *KvStore) Rollback() error {
 	if _kv.trxSize == 1 {
 		return ErrNoValidTrx
 	}
-	_kv.topTrx, _kv.trxSize = _kv.topTrx.Next(), _kv.trxSize-1
+	_kv.topTrx, _kv.trxSize = _kv.topTrx.Next, _kv.trxSize-1
 	return nil
 }
 
@@ -56,8 +56,8 @@ func (_kv *KvStore) Commit() error {
 	if _kv.trxSize == 1 {
 		return ErrNoValidTrx
 	}
-	next := _kv.topTrx.Next()
-	for k, v := range _kv.topTrx.store {
+	next := _kv.topTrx.Next
+	for k, v := range _kv.topTrx.Kvs {
 		next.Set(k, v)
 	}
 	_kv.topTrx, _kv.trxSize = next, _kv.trxSize-1
@@ -69,12 +69,12 @@ func (_kv *KvStore) Commit() error {
 func (_kv *KvStore) Count(value string) int {
 	result, current := 0, _kv.topTrx
 	for current != nil {
-		for _, v := range current.store {
+		for _, v := range current.Kvs {
 			if value == v {
 				result += 1
 			}
 		}
-		current = current.Next()
+		current = current.Next
 	}
 	return result
 }
@@ -94,7 +94,7 @@ func (_kv *KvStore) Get(key string) (string, bool) {
 		if exist {
 			return v, true
 		}
-		next = next.Next()
+		next = next.Next
 	}
 	return "", false
 }
