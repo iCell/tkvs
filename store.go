@@ -7,10 +7,7 @@ import (
 
 const maxTrxDepth = 100
 
-var (
-	ErrNoValidTrx       = errors.New("there is no valid transaction existed")
-	ErrMaxDepthExceeded = errors.New("max transaction depth exceeded")
-)
+var ErrMaxDepthExceeded = errors.New("max transaction depth exceeded")
 
 type IStore interface {
 	Begin() error
@@ -46,7 +43,8 @@ func (_kv *KvStore) Begin() error {
 
 func (_kv *KvStore) Rollback() error {
 	if _kv.trxSize == 1 {
-		return ErrNoValidTrx
+		_kv.topTrx.Clear()
+		return nil
 	}
 	_kv.topTrx, _kv.trxSize = _kv.topTrx.Next, _kv.trxSize-1
 	return nil
@@ -54,7 +52,7 @@ func (_kv *KvStore) Rollback() error {
 
 func (_kv *KvStore) Commit() error {
 	if _kv.trxSize == 1 {
-		return ErrNoValidTrx
+		return nil
 	}
 	next := _kv.topTrx.Next
 	for k, v := range _kv.topTrx.Kvs {

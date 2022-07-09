@@ -21,3 +21,9 @@ func (_trx *transaction) Get(k string) (string, bool) {
 func (_trx *transaction) Delete(k string) {
 	delete(_trx.Kvs, k)
 }
+
+func (_trx *transaction) Clear() {
+	for key := range _trx.Kvs {
+		delete(_trx.Kvs, key)
+	}
+}

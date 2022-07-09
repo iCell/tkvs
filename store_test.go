@@ -18,6 +18,21 @@ func TestKvStore(t *testing.T) {
 		assert(t, 0, kvStore.Count("value2"))
 	})
 
+	t.Run("test commit without begin", func(t *testing.T) {
+		kvStore := NewKvStore()
+		kvStore.Set("key1", "value1")
+		kvStore.Commit()
+		assert(t, "value1", kvStore.MustGet("key1"))
+	})
+
+	t.Run("test rollback without begin", func(t *testing.T) {
+		kvStore := NewKvStore()
+		kvStore.Set("key1", "value1")
+		kvStore.Rollback()
+		assert(t, 1, kvStore.trxSize)
+		assert(t, 0, len(kvStore.topTrx.Kvs))
+	})
+
 	t.Run("test set/get then start a transaction and commit", func(t *testing.T) {
 		kvStore := NewKvStore()
 		kvStore.Set("key1", "value1")
