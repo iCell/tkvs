@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"github.com/iCell/tkvs/store/util"
 	"os"
 	"os/signal"
 )
@@ -17,13 +18,13 @@ func main() {
 
 	session := NewSession()
 	scanner := bufio.NewScanner(os.Stdin)
-	Info("the transactional key-value Kvs started...\n")
+	util.Info("the transactional key-value Kvs started...\n")
 	for {
-		Info("> ")
+		util.Info("> ")
 		scanner.Scan()
 		input := scanner.Text()
 		if err := session.Process(input); err != nil {
-			Error(err.Error())
+			util.Error(err.Error())
 		}
 	}
 }

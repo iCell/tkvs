@@ -1,4 +1,4 @@
-package main
+package tkvs
 
 import (
 	"errors"
@@ -8,16 +8,6 @@ import (
 const maxTrxDepth = 100
 
 var ErrMaxDepthExceeded = errors.New("max transaction depth exceeded")
-
-type IStore interface {
-	Begin() error
-	Rollback() error
-	Commit() error
-	Count(value string) int
-	Get(key string) (string, bool)
-	Set(key, value string)
-	Delete(key string)
-}
 
 type KvStore struct {
 	topTrx  *transaction

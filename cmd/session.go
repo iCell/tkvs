@@ -2,6 +2,9 @@ package main
 
 import (
 	"errors"
+	"github.com/iCell/tkvs/store"
+	"github.com/iCell/tkvs/store/tkvs"
+	"github.com/iCell/tkvs/store/util"
 	"os"
 	"strings"
 )
@@ -12,11 +15,11 @@ var (
 )
 
 type Session struct {
-	Kv IStore
+	Kv store.IStore
 }
 
 func NewSession() *Session {
-	return &Session{Kv: NewKvStore()}
+	return &Session{Kv: tkvs.NewKvStore()}
 }
 
 func (_s *Session) Process(input string) error {
@@ -76,10 +79,10 @@ func (_s *Session) set(args []string) {
 func (_s *Session) get(args []string) {
 	v, exist := _s.Kv.Get(args[0])
 	if !exist {
-		Error("key not set")
+		util.Error("key not set")
 		return
 	}
-	Output(v)
+	util.Output(v)
 }
 
 func (_s *Session) delete(args []string) {
@@ -89,23 +92,23 @@ func (_s *Session) delete(args []string) {
 }
 
 func (_s *Session) count(args []string) {
-	Output(_s.Kv.Count(args[0]))
+	util.Output(_s.Kv.Count(args[0]))
 }
 
 func (_s *Session) begin() {
 	if err := _s.Kv.Begin(); err != nil {
-		Error(err.Error())
+		util.Error(err.Error())
 	}
 }
 
 func (_s *Session) rollback() {
 	if err := _s.Kv.Rollback(); err != nil {
-		Error(err.Error())
+		util.Error(err.Error())
 	}
 }
 
 func (_s *Session) commit() {
 	if err := _s.Kv.Commit(); err != nil {
-		Error(err.Error())
+		util.Error(err.Error())
 	}
 }

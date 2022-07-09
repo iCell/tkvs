@@ -1,4 +1,4 @@
-package main
+package tkvs
 
 type transaction struct {
 	Kvs  map[string]string
