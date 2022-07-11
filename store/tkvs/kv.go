@@ -7,7 +7,10 @@ import (
 
 const maxTrxDepth = 100
 
-var ErrMaxDepthExceeded = errors.New("max transaction depth exceeded")
+var (
+	ErrMaxDepthExceeded = errors.New("max transaction depth exceeded")
+	ErrNoValidTrx       = errors.New("no transaction")
+)
 
 type KvStore struct {
 	topTrx   *transaction
@@ -33,8 +36,7 @@ func (_kv *KvStore) Begin() error {
 
 func (_kv *KvStore) Rollback() error {
 	if _kv.trxCount == 1 {
-		_kv.topTrx.Clear()
-		return nil
+		return ErrNoValidTrx
 	}
 	_kv.topTrx, _kv.trxCount = _kv.topTrx.Next, _kv.trxCount-1
 	return nil
@@ -42,7 +44,7 @@ func (_kv *KvStore) Rollback() error {
 
 func (_kv *KvStore) Commit() error {
 	if _kv.trxCount == 1 {
-		return nil
+		return ErrNoValidTrx
 	}
 	next := _kv.topTrx.Next
 	for k, v := range _kv.topTrx.Kvs {
@@ -55,12 +57,13 @@ func (_kv *KvStore) Commit() error {
 // Count function is operated in-memory, the iteration is so fast,
 // based on the requirements, no need to add a reversed map to archive O(1) complexity.
 func (_kv *KvStore) Count(value string) int {
-	result, current := 0, _kv.topTrx
+	result, visited, current := 0, make(map[string]bool), _kv.topTrx
 	for current != nil {
-		for _, v := range current.Kvs {
-			if value == v {
+		for key, v := range current.Kvs {
+			if !visited[key] && value == v {
 				result += 1
 			}
+			visited[key] = true
 		}
 		current = current.Next
 	}

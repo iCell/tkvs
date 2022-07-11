@@ -25,14 +25,6 @@ func TestKvStore(t *testing.T) {
 		assert(t, "value1", kvStore.MustGet("key1"))
 	})
 
-	t.Run("test rollback without begin", func(t *testing.T) {
-		kvStore := NewKvStore()
-		kvStore.Set("key1", "value1")
-		kvStore.Rollback()
-		assert(t, 1, kvStore.trxCount)
-		assert(t, 0, len(kvStore.topTrx.Kvs))
-	})
-
 	t.Run("test set/get then start a transaction and commit", func(t *testing.T) {
 		kvStore := NewKvStore()
 		kvStore.Set("key1", "value1")
@@ -135,6 +127,38 @@ func TestKvStore(t *testing.T) {
 		assert(t, 2, kvStore.Count("value1"))
 		assert(t, 1, kvStore.Count("inner_value2"))
 		assert(t, 0, kvStore.Count("value"))
+	})
+
+	t.Run("test count with nested transaction and commit", func(t *testing.T) {
+		kvStore := NewKvStore()
+		kvStore.Set("foo", "123")
+		assert(t, 1, kvStore.Count("123"))
+
+		kvStore.Begin()
+		kvStore.Set("foo", "234")
+		assert(t, 0, kvStore.Count("123"))
+		assert(t, 1, kvStore.Count("234"))
+		kvStore.Set("bar", "234")
+		assert(t, 2, kvStore.Count("234"))
+		kvStore.Commit()
+		assert(t, 0, kvStore.Count("123"))
+		assert(t, 2, kvStore.Count("234"))
+	})
+
+	t.Run("test count with nested transaction and rollback", func(t *testing.T) {
+		kvStore := NewKvStore()
+		kvStore.Set("foo", "123")
+		assert(t, 1, kvStore.Count("123"))
+
+		kvStore.Begin()
+		kvStore.Set("foo", "234")
+		assert(t, 0, kvStore.Count("123"))
+		assert(t, 1, kvStore.Count("234"))
+		kvStore.Set("bar", "234")
+		assert(t, 2, kvStore.Count("234"))
+		kvStore.Rollback()
+		assert(t, 1, kvStore.Count("123"))
+		assert(t, 0, kvStore.Count("234"))
 	})
 }
 
