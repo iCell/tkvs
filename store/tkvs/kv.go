@@ -60,7 +60,7 @@ func (_kv *KvStore) Count(value string) int {
 	result, visited, current := 0, make(map[string]bool), _kv.topTrx
 	for current != nil {
 		for key, v := range current.Kvs {
-			if !visited[key] && value == v {
+			if !visited[key] && v.Valid && value == v.Val {
 				result += 1
 			}
 			visited[key] = true
@@ -74,8 +74,8 @@ func (_kv *KvStore) Delete(key string) {
 	_kv.topTrx.Delete(key)
 }
 
-func (_kv *KvStore) Set(key, value string) {
-	_kv.topTrx.Set(key, value)
+func (_kv *KvStore) Set(key, v string) {
+	_kv.topTrx.Set(key, &storedValue{Val: v, Valid: true})
 }
 
 func (_kv *KvStore) Get(key string) (string, bool) {
@@ -83,7 +83,10 @@ func (_kv *KvStore) Get(key string) (string, bool) {
 	for next != nil {
 		v, exist := next.Get(key)
 		if exist {
-			return v, true
+			if !v.Valid {
+				return "", false
+			}
+			return v.Val, true
 		}
 		next = next.Next
 	}

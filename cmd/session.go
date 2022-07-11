@@ -71,7 +71,7 @@ func (_s *Session) set(args []string) {
 
 func (_s *Session) get(args []string) {
 	if len(args) != 1 {
-		util.Error("you should provide at least one key")
+		util.Error("you should provide exact one key")
 		return
 	}
 	v, exist := _s.Kv.Get(args[0])
@@ -94,7 +94,7 @@ func (_s *Session) delete(args []string) {
 
 func (_s *Session) count(args []string) {
 	if len(args) != 1 {
-		util.Error("you should provide one key")
+		util.Error("you should provide exact one key")
 		return
 	}
 	util.Output(_s.Kv.Count(args[0]))

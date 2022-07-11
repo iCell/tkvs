@@ -160,6 +160,73 @@ func TestKvStore(t *testing.T) {
 		assert(t, 1, kvStore.Count("123"))
 		assert(t, 0, kvStore.Count("234"))
 	})
+
+	t.Run("test count deleted with nested transaction and commit", func(t *testing.T) {
+		kvStore := NewKvStore()
+		kvStore.Set("foo", "123")
+		assert(t, 1, kvStore.Count("123"))
+
+		kvStore.Begin()
+		kvStore.Set("foo", "234")
+		assert(t, 0, kvStore.Count("123"))
+		assert(t, 1, kvStore.Count("234"))
+
+		kvStore.Delete("foo")
+		assert(t, 0, kvStore.Count("123"))
+		assert(t, 0, kvStore.Count("234"))
+		kvStore.Commit()
+		assert(t, 0, kvStore.Count("123"))
+		assert(t, 0, kvStore.Count("234"))
+	})
+
+	t.Run("test count deleted with nested transaction and rollback", func(t *testing.T) {
+		kvStore := NewKvStore()
+		kvStore.Set("foo", "123")
+		assert(t, 1, kvStore.Count("123"))
+
+		kvStore.Begin()
+		kvStore.Set("foo", "234")
+		assert(t, 0, kvStore.Count("123"))
+		assert(t, 1, kvStore.Count("234"))
+
+		kvStore.Delete("foo")
+		assert(t, 0, kvStore.Count("123"))
+		assert(t, 0, kvStore.Count("234"))
+		kvStore.Rollback()
+		assert(t, 1, kvStore.Count("123"))
+		assert(t, 0, kvStore.Count("234"))
+	})
+
+	t.Run("test delete with nested transaction, then commit", func(t *testing.T) {
+		kvStore := NewKvStore()
+		kvStore.Set("foo", "123")
+		assert(t, 1, kvStore.Count("123"))
+
+		kvStore.Begin()
+		kvStore.Delete("foo")
+		_, exist := kvStore.Get("foo")
+		assert(t, false, exist)
+		kvStore.Commit()
+
+		_, exist = kvStore.Get("foo")
+		assert(t, false, exist)
+	})
+
+	t.Run("test delete with nested transaction, then rollback", func(t *testing.T) {
+		kvStore := NewKvStore()
+		kvStore.Set("foo", "123")
+		assert(t, 1, kvStore.Count("123"))
+
+		kvStore.Begin()
+		kvStore.Delete("foo")
+		_, exist := kvStore.Get("foo")
+		assert(t, false, exist)
+		kvStore.Rollback()
+
+		v, exist := kvStore.Get("foo")
+		assert(t, true, exist)
+		assert(t, v, "123")
+	})
 }
 
 func shouldBeNoError(t *testing.T, err error) {
